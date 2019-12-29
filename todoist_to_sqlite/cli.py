@@ -70,11 +70,11 @@ def sync(db_path, auth):
         )
     api = TodoistAPI()
     sync_data = api.sync(api_token=token, sync_token="*").json()
-    for category in ['items', 'labels', 'projects', 'filters', 'notes', 'sections']:
+    for category in ["items", "labels", "projects", "filters", "notes", "sections"]:
         db[category].upsert_all(sync_data[category], pk="id", alter=True)
 
-    db['users'].upsert_all(sync_data['collaborators'], pk="id")
-    db['users'].upsert(sync_data['user'], pk='id')
+    db["users"].upsert_all(sync_data["collaborators"], pk="id")
+    db["users"].upsert(sync_data["user"], pk="id")
 
     utils.add_foreign_keys(db)
 
@@ -93,7 +93,7 @@ def sync(db_path, auth):
     help="Path to save tokens to, defaults to auth.json",
 )
 def completed_tasks(db_path, auth):
-    """Save tasks for the authenticated user"""
+    """Save all completed tasks for the authenticated user (requires Todoist premium)"""
     db = sqlite_utils.Database(db_path)
     try:
         data = json.load(open(auth))
@@ -108,22 +108,27 @@ def completed_tasks(db_path, auth):
     offset = 0
 
     progress_bar = tqdm(
-        desc="Fetching completed tasks",
-        total=stats.json().get('completed_count')
+        desc="Fetching completed tasks", total=stats.json().get("completed_count")
     )
 
     while True:
         data = api.get_all_completed_tasks(
-            api_token=token, limit=PAGE_SIZE, offset=offset).json()
-        db['items'].upsert_all(data['items'], pk='id', alter=True)
-        db['projects'].upsert_all(
-            data['projects'].values(), pk='id', alter=True)
-        num_items = len(data['items'])
+            api_token=token, limit=PAGE_SIZE, offset=offset
+        ).json()
+
+        db["items"].upsert_all(data["items"], pk="id", alter=True)
+        db["projects"].upsert_all(
+            data["projects"].values(), pk="id", alter=True)
+
+        num_items = len(data["items"])
         if num_items == 0 or True:
             break
+
         progress_bar.update(num_items)
         offset += num_items
         time.sleep(1)
+
+    progress_bar.close()
     utils.add_foreign_keys(db, tables=["users", "projects"])
 
 
