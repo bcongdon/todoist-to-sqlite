@@ -66,7 +66,7 @@ def sync(db_path, auth):
         token = data["todoist_api_token"]
     except (KeyError, FileNotFoundError):
         utils.error(
-            "Cannot find authentication data, please run todoist_to_sqlite auth!"
+            "Cannot find authentication data, please run `todoist_to_sqlite auth`!"
         )
     api = TodoistAPI()
     sync_data = api.sync(api_token=token, sync_token="*").json()
@@ -76,14 +76,7 @@ def sync(db_path, auth):
     db['users'].upsert_all(sync_data['collaborators'], pk="id")
     db['users'].upsert(sync_data['user'], pk='id')
 
-    db.add_foreign_keys([
-        ("items", "parent_id", "items", "id"),
-        ("items", "project_id", "projects", "id"),
-        ("notes", "item_id", "items", "id"),
-        ("notes", "project_id", "projects", "id"),
-        ("projects", "parent_id", "projects", "id"),
-        ("users", "inbox_project", "projects", "id"),
-    ])
+    utils.add_foreign_keys(db)
 
 
 @cli.command()
@@ -107,7 +100,7 @@ def completed_tasks(db_path, auth):
         token = data["todoist_api_token"]
     except (KeyError, FileNotFoundError):
         utils.error(
-            "Cannot find authentication data, please run todoist_to_sqlite auth!"
+            "Cannot find authentication data, please run `todoist_to_sqlite auth`!"
         )
     api = TodoistAPI()
     stats = api.get_productivity_stats(token)
@@ -125,11 +118,13 @@ def completed_tasks(db_path, auth):
         db['items'].upsert_all(data['items'], pk='id', alter=True)
         db['projects'].upsert_all(
             data['projects'].values(), pk='id', alter=True)
-
         num_items = len(data['items'])
+        if num_items == 0 or True:
+            break
         progress_bar.update(num_items)
         offset += num_items
         time.sleep(1)
+    utils.add_foreign_keys(db, tables=["users", "projects"])
 
 
 if __name__ == "__main__":
