@@ -17,8 +17,7 @@ def error(message):
     sys.exit(-1)
 
 
-def add_foreign_keys(db, tables=None):
-    for fk in FOREIGN_KEYS:
-        if tables and fk[0] not in tables:
-            continue
-        db.add_foreign_keys([fk])
+def foreign_keys_for(table):
+    for (t, *fk) in FOREIGN_KEYS:
+        if t == table:
+            yield fk

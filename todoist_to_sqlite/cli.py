@@ -36,12 +36,15 @@ def auth(auth):
     open(auth, "w").write(json.dumps(auth_data, indent=4) + "\n")
     click.echo()
     click.echo(
-        "Your authentication credentials have been saved to {}. You can now import tasks by running".format(
+        "Your authentication credentials have been saved to {}. You can now import tasks by running:".format(
             auth
         )
     )
     click.echo()
-    click.echo("    todoist-to-sqlite tasks todoist.db")
+    click.echo("    $ todoist-to-sqlite sync todoist.db")
+    click.echo()
+    click.echo("    # (Requires Todoist Premium)")
+    click.echo("    $ todoist-to-sqlite completed-tasks todoist.db")
     click.echo()
 
 
@@ -71,12 +74,19 @@ def sync(db_path, auth):
     api = TodoistAPI()
     sync_data = api.sync(api_token=token, sync_token="*").json()
     for category in ["items", "labels", "projects", "filters", "notes", "sections"]:
-        db[category].upsert_all(sync_data[category], pk="id", alter=True)
+        db[category].upsert_all(
+            sync_data[category],
+            pk="id",
+            alter=True,
+            foreign_keys=utils.foreign_keys_for(category),
+        )
 
-    db["users"].upsert_all(sync_data["collaborators"], pk="id")
+    db["users"].upsert_all(
+        sync_data["collaborators"],
+        pk="id",
+        foreign_keys=utils.foreign_keys_for("users"),
+    )
     db["users"].upsert(sync_data["user"], pk="id")
-
-    utils.add_foreign_keys(db)
 
 
 @cli.command()
@@ -104,7 +114,7 @@ def completed_tasks(db_path, auth):
         )
     api = TodoistAPI()
     stats = api.get_productivity_stats(token)
-    PAGE_SIZE = 50
+    PAGE_SIZE = 200
     offset = 0
 
     progress_bar = tqdm(
@@ -116,12 +126,21 @@ def completed_tasks(db_path, auth):
             api_token=token, limit=PAGE_SIZE, offset=offset
         ).json()
 
-        db["items"].upsert_all(data["items"], pk="id", alter=True)
+        db["items"].upsert_all(
+            data["items"],
+            pk="id",
+            alter=True,
+            foreign_keys=utils.foreign_keys_for("items"),
+        )
         db["projects"].upsert_all(
-            data["projects"].values(), pk="id", alter=True)
+            data["projects"].values(),
+            pk="id",
+            alter=True,
+            foreign_keys=utils.foreign_keys_for("projects"),
+        )
 
         num_items = len(data["items"])
-        if num_items == 0 or True:
+        if num_items == 0:
             break
 
         progress_bar.update(num_items)
@@ -129,7 +148,6 @@ def completed_tasks(db_path, auth):
         time.sleep(1)
 
     progress_bar.close()
-    utils.add_foreign_keys(db, tables=["users", "projects"])
 
 
 if __name__ == "__main__":

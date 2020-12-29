@@ -43,7 +43,7 @@ setup(
     install_requires=[
         "click",
         "requests",
-        "sqlite-utils~=1.11",
+        "sqlite-utils~=3.1",
         "tqdm~=4.36",
         "pytodoist~=2.1",
     ],
