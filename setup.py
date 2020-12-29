@@ -2,7 +2,7 @@ import os
 
 from setuptools import setup
 
-VERSION = "0.1"
+VERSION = "0.2"
 
 
 def get_long_description():
@@ -31,6 +31,7 @@ setup(
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
         "Topic :: Database",
     ],
     keywords="todoist sqlite export dogsheep",
