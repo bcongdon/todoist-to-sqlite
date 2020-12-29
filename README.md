@@ -30,13 +30,23 @@ This includes: uncompleted tasks, projects, labels, filters, and notes.
 
 ## Saving Completed Tasks
 
-The `completed_tasks` command saves all completed tasks from your Todoist account. This may take a long time to download for active Todoist users.
+The `completed-tasks` command saves all completed tasks from your Todoist account. This may take a long time to download for active Todoist users.
 
-    $ todoist-to-sqlite completed_tasks todoist.db
+    $ todoist-to-sqlite completed-tasks todoist.db
 
-`completed_tasks` also will sync any associated metadata (i.e. archived projects) associated with completed tasks.
+`completed-tasks` also will sync any associated metadata (i.e. archived projects) associated with completed tasks.
 
 Note: This command requires Todoist Premium due to limitations of their API.
+
+### `from_date` and `to_date`
+
+You can specify `--from_date` and `--to_date` to place boundaries on the time range that `todoist-to-sqlite` will fetch completed tasks from.
+
+```
+    $ todoist-to-sqlite completed-tasks todoist.db \
+        --to_date   2020-12-01 \
+        --from_date 2020-12-30
+```
 
 ## Attribution
 

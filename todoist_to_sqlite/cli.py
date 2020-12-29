@@ -102,7 +102,17 @@ def sync(db_path, auth):
     default="auth.json",
     help="Path to save tokens to, defaults to auth.json",
 )
-def completed_tasks(db_path, auth):
+@click.option(
+    "--from_date",
+    type=click.DateTime(),
+    help="Saves tasks with a completion date on or older than from_date.",
+)
+@click.option(
+    "--to_date",
+    type=click.DateTime(),
+    help="Saves tasks with a completion date on or newer than to_date.",
+)
+def completed_tasks(db_path, auth, from_date, to_date):
     """Save all completed tasks for the authenticated user (requires Todoist premium)"""
     db = sqlite_utils.Database(db_path)
     try:
@@ -113,18 +123,25 @@ def completed_tasks(db_path, auth):
             "Cannot find authentication data, please run `todoist_to_sqlite auth`!"
         )
     api = TodoistAPI()
-    stats = api.get_productivity_stats(token)
+
+    total = None
+    if not from_date and not to_date:
+        total = api.get_productivity_stats(token).json().get("completed_count")
+
+    progress_bar = tqdm(desc="Fetching completed tasks", total=total, unit="tasks")
+
     PAGE_SIZE = 200
     offset = 0
-
-    progress_bar = tqdm(
-        desc="Fetching completed tasks", total=stats.json().get("completed_count")
-    )
-
     while True:
-        data = api.get_all_completed_tasks(
-            api_token=token, limit=PAGE_SIZE, offset=offset
-        ).json()
+        resp = api.get_all_completed_tasks(
+            api_token=token,
+            limit=PAGE_SIZE,
+            offset=offset,
+            from_date=from_date and from_date.isoformat(),
+            to_date=to_date and to_date.isoformat(),
+        )
+        resp.raise_for_status()
+        data = resp.json()
 
         db["items"].upsert_all(
             data["items"],
